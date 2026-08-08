@@ -1,0 +1,10 @@
+# 运行时文件
+filter_proxy.log
+*.bak-*
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 本地临时文件
+_config_test.toml
