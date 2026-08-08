@@ -58,7 +58,7 @@ def is_bad_reasoning(item, min_len, strip_all):
 
 
 def filter_items(items, min_len, strip_all):
-    """过滤 reasoning 列表, 返回 (新列表, 删除数)。"""
+    """过滤 reasoning 列表, 返回 (新列表, 删除数)。递归处理 message content 内嵌项。"""
     if not isinstance(items, list):
         return items, 0
     out = []
@@ -67,6 +67,11 @@ def filter_items(items, min_len, strip_all):
         if is_bad_reasoning(it, min_len, strip_all):
             removed += 1
             continue
+        if isinstance(it, dict) and it.get("type") == "message" and isinstance(it.get("content"), list):
+            new_content, n = filter_items(it["content"], min_len, strip_all)
+            if n:
+                it["content"] = new_content
+                removed += n
         out.append(it)
     return out, removed
 

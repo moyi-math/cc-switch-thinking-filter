@@ -37,6 +37,18 @@ check("filter_items 保留正常+消息", out[0]["id"] == "b" and out[1]["type"]
 out2, n2 = fp.filter_items(items, 4, True)
 check("strip_all 全删 reasoning", n2 == 3 and len(out2) == 1)
 
+nested = [
+    {"type": "message", "role": "assistant", "content": [
+        {"type": "reasoning", "id": "n1", "encrypted_content": EMPTY_ENC},
+        {"type": "output_text", "text": "hi"},
+        {"type": "reasoning", "id": "n2", "encrypted_content": OK_ENC},
+    ]},
+    {"type": "reasoning", "id": "a", "encrypted_content": EMPTY_ENC},
+]
+n_out, n_rm = fp.filter_items(nested, 4, False)
+check("filter_items nested strip", n_rm == 2 and len(n_out) == 1)
+check("nested keeps text+ok", n_out[0]["content"][0]["type"] == "output_text" and n_out[0]["content"][1]["id"] == "n2")
+
 san = fp.SSESanitizer(4, False)
 evs = [
     {"type": "response.output_item.added", "output_index": 0, "item": {"type": "message", "id": "msg_1"}},
