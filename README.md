@@ -18,7 +18,7 @@
 Codex (15722) -> filter_proxy.py -> CC Switch (15721) -> 上游
 ```
 
-- **请求侧**：剥离历史中"空/超短 thinking"的 reasoning 项（兜底）；
+- **请求侧**：剥离历史中"空/超短 thinking"的 reasoning 项（含 message content 内嵌项，兜底）；
 - **响应侧**：SSE/JSON 输出中丢弃空 thinking reasoning（空 thinking 永不进入 Codex 历史）；
 - 正常长度的思考内容原样保留。
 
@@ -27,7 +27,7 @@ Codex (15722) -> filter_proxy.py -> CC Switch (15721) -> 上游
 | 文件 | 说明 |
 |---|---|
 | `filter_proxy.py` | 过滤代理（纯 Python 标准库，无依赖） |
-| `filter_watchdog.ps1` | 看门狗：代理不在线/崩溃自动拉起（常驻） |
+| `filter_watchdog.ps1` | 看门狗：代理不在线/崩溃自动拉起 + cc-switch 重启/切换供应商时自动钉回 base_url + 上游端口自适应 + 单实例锁（常驻） |
 | `pin-codex-filter.ps1` | 按当前激活供应商钉住 base_url（基元律动类 -> 15722；其他 -> 15721） |
 | `install-autostart.ps1` | 一键安装：复制脚本到 `%USERPROFILE%\cc-switch-fix` + 写启动文件夹 vbs + 启动看门狗 |
 | `start-codex.ps1` | 手动启动器：确保代理在跑 + 重钉配置 + 启动 codex |
@@ -48,10 +48,19 @@ powershell -ExecutionPolicy Bypass -File .\pin-codex-filter.ps1
 
 ## 使用
 
-- 正常启动 Codex 即可（代理开机自启、崩溃自愈）。
+- 正常启动 Codex 即可（代理开机自启、崩溃自愈、base_url 自动钉回）。
 - 手动启动：`powershell -File .\start-codex.ps1`
 - 查看日志：`%USERPROFILE%\cc-switch-fix\filter_proxy.log`
 - 应急清洁（遇到 400 时）：`python clean_empty_thinking.py %USERPROFILE%\.codex\sessions`
+
+## 自愈能力
+
+`filter_watchdog.ps1` 常驻巡检（约 5 秒一轮）：
+
+- **过滤器保活**：15722 端口不在线/崩溃时自动拉起 `filter_proxy.py`；
+- **base_url 自动钉回**：cc-switch 重启或切换供应商会重写 `config.toml` 的 base_url，看门狗检测到 cc-switch 进程 PID 变化后立即执行 `pin-codex-filter.ps1`，并每轮轮询兜底，基元律动类供应商自动钉回 15722，无需手动干预；
+- **上游端口自适应**：从 `cc-switch.db` 读取 codex 代理端口，端口变化后用新端口重启过滤器；
+- **单实例锁**：原子锁文件（`filter_watchdog.lock`）保证只有一个看门狗实例。
 
 ## 参数
 

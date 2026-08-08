@@ -1,6 +1,7 @@
 # 运行时文件
 filter_proxy.log
 *.bak-*
+filter_watchdog.lock
 
 # Python 缓存
 __pycache__/
